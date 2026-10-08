@@ -1,0 +1,363 @@
+=== Cell 50 [code] ===
+print("B2:")
+print("Min:", b2.min())
+print("Max:", b2.max())
+print("Non-zero pixels:", np.count_nonzero(b2))
+
+print("\nB3:")
+print("Min:", b3.min())
+print("Max:", b3.max())
+print("Non-zero pixels:", np.count_nonzero(b3))
+
+print("\nB4:")
+print("Min:", b4.min())
+print("Max:", b4.max())
+print("Non-zero pixels:", np.count_nonzero(b4))
+
+=== Cell 51 [code] ===
+print("B2 NoData:", src_b2.nodata)
+print("B3 NoData:", src_b3.nodata)
+print("B4 NoData:", src_b4.nodata)
+
+=== Cell 52 [code] ===
+# Check the image at different positions
+
+test_positions = [
+    (0, 0),
+    (0, 2000),
+    (2000, 0),
+    (2000, 2000),
+    (4000, 4000),
+    (8000, 8000),
+    (12000, 12000)
+]
+
+for row, col in test_positions:
+
+    window = Window(col, row, 256, 256)
+
+    b2_test = src_b2.read(1, window=window)
+    b3_test = src_b3.read(1, window=window)
+    b4_test = src_b4.read(1, window=window)
+
+    valid = (
+        (b2_test > 0) &
+        (b3_test > 0) &
+        (b4_test > 0)
+    )
+
+    print(
+        f"Row={row}, Col={col} "
+        f"→ Valid={valid.mean()*100:.2f}% "
+        f"| B2 max={b2_test.max()} "
+        f"| B3 max={b3_test.max()} "
+        f"| B4 max={b4_test.max()}"
+    )
+
+=== Cell 53 [code] ===
+from rasterio.windows import Window
+import numpy as np
+
+patch_size = 256
+stride = 256
+
+# Scene-level normalization values
+norm_stats = {
+    "B2": (215.0, 898.0),
+    "B3": (197.0, 901.0),
+    "B4": (285.0, 865.0)
+}
+
+valid_threshold = 0.90
+
+test_count = 0
+
+for row in range(0, src_b2.height - patch_size + 1, stride):
+
+    for col in range(0, src_b2.width - patch_size + 1, stride):
+
+        window = Window(col, row, patch_size, patch_size)
+
+        b2 = src_b2.read(1, window=window)
+        b3 = src_b3.read(1, window=window)
+        b4 = src_b4.read(1, window=window)
+
+        valid_mask = (
+            (b2 > 0) &
+            (b3 > 0) &
+            (b4 > 0)
+        )
+
+        valid_fraction = valid_mask.mean()
+
+        if valid_fraction >= valid_threshold:
+
+            print(
+                f"Found valid patch → "
+                f"Row={row}, Col={col}, "
+                f"Valid={valid_fraction*100:.2f}%"
+            )
+
+            test_count += 1
+
+            if test_count == 10:
+                break
+
+    if test_count == 10:
+        break
+
+print("\nTotal test patches found:", test_count)
+
+=== Cell 54 [code] ===
+from rasterio.windows import Window
+import numpy as np
+import os
+
+# -----------------------------
+# Patch settings
+# -----------------------------
+patch_size = 256
+stride = 256
+
+# Only keep patches where at least 90% of pixels
+# are valid in all three bands
+valid_threshold = 0.90
+
+# -----------------------------
+# Normalization values
+# -----------------------------
+norm_stats = {
+    "B2": (215.0, 898.0),
+    "B3": (197.0, 901.0),
+    "B4": (285.0, 865.0)
+}
+
+# -----------------------------
+# Output folder
+# -----------------------------
+clear_dir = "/content/liss_iv_dataset/clear"
+os.makedirs(clear_dir, exist_ok=True)
+
+# -----------------------------
+# Helper function
+# -----------------------------
+def normalize_band(band, low, high):
+    band = band.astype(np.float32)
+
+    band = (band - low) / (high - low)
+
+    band = np.clip(band, 0, 1)
+
+    return band
+
+
+# -----------------------------
+# Extract patches
+# -----------------------------
+patch_count = 0
+skipped_count = 0
+
+for row in range(0, src_b2.height - patch_size + 1, stride):
+
+    for col in range(0, src_b2.width - patch_size + 1, stride):
+
+        window = Window(
+            col,
+            row,
+            patch_size,
+            patch_size
+        )
+
+        # Read all three bands
+        b2 = src_b2.read(1, window=window)
+        b3 = src_b3.read(1, window=window)
+        b4 = src_b4.read(1, window=window)
+
+        # -----------------------------
+        # Valid pixel mask
+        # -----------------------------
+        valid_mask = (
+            (b2 > 0) &
+            (b3 > 0) &
+            (b4 > 0)
+        )
+
+        valid_fraction = valid_mask.mean()
+
+        # Skip mostly-empty patches
+        if valid_fraction < valid_threshold:
+            skipped_count += 1
+            continue
+
+        # -----------------------------
+        # Normalize
+        # -----------------------------
+        b2_norm = normalize_band(
+            b2,
+            norm_stats["B2"][0],
+            norm_stats["B2"][1]
+        )
+
+        b3_norm = normalize_band(
+            b3,
+            norm_stats["B3"][0],
+            norm_stats["B3"][1]
+        )
+
+        b4_norm = normalize_band(
+            b4,
+            norm_stats["B4"][0],
+            norm_stats["B4"][1]
+        )
+
+        # -----------------------------
+        # Stack channels
+        # B2, B3, B4
+        # -----------------------------
+        patch = np.stack(
+            [b2_norm, b3_norm, b4_norm],
+            axis=0
+        ).astype(np.float32)
+
+        # -----------------------------
+        # Save
+        # -----------------------------
+        patch_filename = f"clear_{patch_count:05d}.npy"
+
+        patch_path = os.path.join(
+            clear_dir,
+            patch_filename
+        )
+
+        np.save(patch_path, patch)
+
+        patch_count += 1
+
+print("Patch extraction complete!")
+print("Valid patches saved:", patch_count)
+print("Patches skipped:", skipped_count)
+
+=== Cell 55 [code] ===
+import os
+import numpy as np
+import matplotlib.pyplot as plt
+
+clear_dir = "/content/liss_iv_dataset/clear"
+
+# Get saved patches
+patch_files = sorted([
+    f for f in os.listdir(clear_dir)
+    if f.endswith(".npy")
+])
+
+print("Number of patches:", len(patch_files))
+
+# Pick a few patches
+sample_files = patch_files[:6]
+
+plt.figure(figsize=(15, 10))
+
+for i, filename in enumerate(sample_files):
+
+    patch = np.load(
+        os.path.join(clear_dir, filename)
+    )
+
+    # B2, B3, B4
+    b2 = patch[0]
+    b3 = patch[1]
+    b4 = patch[2]
+
+    # FCC = B4, B3, B2
+    fcc = np.stack(
+        [b4, b3, b2],
+        axis=-1
+    )
+
+    plt.subplot(2, 3, i + 1)
+    plt.imshow(fcc)
+    plt.title(filename)
+    plt.axis("off")
+
+plt.tight_layout()
+plt.show()
+
+=== Cell 56 [code] ===
+import os
+import numpy as np
+
+clear_dir = "/content/liss_iv_dataset/clear"
+
+for filename in ["clear_00000.npy", "clear_00001.npy", "clear_00002.npy"]:
+
+    patch = np.load(os.path.join(clear_dir, filename))
+
+    print("\n", filename)
+    print("Shape:", patch.shape)
+
+    for i, band in enumerate(["B2", "B3", "B4"]):
+        data = patch[i]
+
+        print(
+            band,
+            "| min =", round(data.min(), 4),
+            "| max =", round(data.max(), 4),
+            "| mean =", round(data.mean(), 4),
+            "| p2 =", round(np.percentile(data, 2), 4),
+            "| p98 =", round(np.percentile(data, 98), 4)
+        )
+
+=== Cell 57 [code] ===
+
+
+clear_dir = "/content/liss_iv_dataset/clear"
+
+sample_files = [
+    "clear_00000.npy",
+    "clear_00001.npy",
+    "clear_00002.npy",
+    "clear_00100.npy",
+    "clear_01000.npy",
+    "clear_02000.npy"
+]
+
+def stretch_for_display(band):
+    low = np.percentile(band, 2)
+    high = np.percentile(band, 98)
+
+    band = (band - low) / (high - low + 1e-8)
+    return np.clip(band, 0, 1)
+
+
+plt.figure(figsize=(15, 10))
+
+for i, filename in enumerate(sample_files):
+
+    patch = np.load(
+        os.path.join(clear_dir, filename)
+    )
+
+    b2 = patch[0]
+    b3 = patch[1]
+    b4 = patch[2]
+
+    # Local stretch ONLY for visualization
+    b2_display = stretch_for_display(b2)
+    b3_display = stretch_for_display(b3)
+    b4_display = stretch_for_display(b4)
+
+    # FCC = B4, B3, B2
+    fcc = np.stack(
+        [b4_display, b3_display, b2_display],
+        axis=-1
+    )
+
+    plt.subplot(2, 3, i + 1)
+    plt.imshow(fcc)
+    plt.title(filename)
+    plt.axis("off")
+
+plt.tight_layout()
+plt.show()
+
+
