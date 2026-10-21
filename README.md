@@ -15,13 +15,18 @@ LISS-IV-Cloud-Removal-GAN/
 │   ├── 01_explore_and_inspect.ipynb   # Step 1: Band reading, statistics & FCC composite visualization
 │   ├── 02_patch_generation_pipeline.ipynb # Step 2: Automated patch extraction & synthetic cloud generation
 │   ├── 03_preview_and_verify.ipynb    # Step 3: Dataset inspection, histogram comparisons & PyTorch loader test
+│   ├── 04_cloud_detection_and_masking.ipynb # Step 4: Cloud detection, semantic masking & GAN parameters
 │   └── Reading-tiff.ipynb             # Preserved original experimental notebook
 │
 ├── scripts/                           # ⚙️ Standalone Python Scripts (CLI & Modules)
 │   ├── generate_patches.py            # End-to-end pipeline CLI: ZIPs -> Normalized paired patches
 │   ├── cloud_simulator.py             # Realistic multi-octave cloud mask generation & blending
+│   ├── cloud_detector.py              # Cloud detection, semantic masking & GAN parameter extraction
 │   ├── preview_patches.py             # Quick CLI tool to view False Color Composite (FCC) samples
 │   └── dataset_loader.py              # PyTorch Dataset & DataLoader class for GAN training
+│
+├── docs/                              # 📚 Comprehensive Architecture & Technical Reports
+│   └── PROJECT_PIPELINE_AND_CHALLENGES.md # Full 10-step pipeline & in-depth challenges guide
 │
 ├── notes/                             # 📝 Research Notes & Experimental Logs
 │   ├── scratch_cells.txt              # Preserved Colab/interactive experiment cells
@@ -46,10 +51,13 @@ LISS-IV-Cloud-Removal-GAN/
 
 | Task | Where to Go | Command / Notebook |
 | :--- | :--- | :--- |
+| **Complete Project & Challenges Guide** | `docs/` | [PROJECT_PIPELINE_AND_CHALLENGES.md](file:///c:/Projects/Major-project/LISS-IV-Cloud-Removal-GAN/docs/PROJECT_PIPELINE_AND_CHALLENGES.md) |
 | **Inspect raw GeoTIFF bands & FCC** | `notebooks/` | [01_explore_and_inspect.ipynb](file:///c:/Projects/Major-project/LISS-IV-Cloud-Removal-GAN/notebooks/01_explore_and_inspect.ipynb) |
 | **Run patch extraction interactively** | `notebooks/` | [02_patch_generation_pipeline.ipynb](file:///c:/Projects/Major-project/LISS-IV-Cloud-Removal-GAN/notebooks/02_patch_generation_pipeline.ipynb) |
 | **Visually verify generated patches** | `notebooks/` | [03_preview_and_verify.ipynb](file:///c:/Projects/Major-project/LISS-IV-Cloud-Removal-GAN/notebooks/03_preview_and_verify.ipynb) |
+| **Detect clouds & extract GAN parameters** | `notebooks/` | [04_cloud_detection_and_masking.ipynb](file:///c:/Projects/Major-project/LISS-IV-Cloud-Removal-GAN/notebooks/04_cloud_detection_and_masking.ipynb) |
 | **Run automated extraction from Terminal** | `scripts/` | `python scripts/generate_patches.py` |
+| **Detect clouds & view masks from Terminal** | `scripts/` | `python scripts/cloud_detector.py --preview --num_samples 4` |
 | **Quickly inspect patches from Terminal** | `scripts/` | `python scripts/preview_patches.py --num_samples 4 --save` |
 | **Modify or test cloud simulation logic** | `scripts/` | [cloud_simulator.py](file:///c:/Projects/Major-project/LISS-IV-Cloud-Removal-GAN/scripts/cloud_simulator.py) |
 | **Load patches into PyTorch for GANs** | `scripts/` | [dataset_loader.py](file:///c:/Projects/Major-project/LISS-IV-Cloud-Removal-GAN/scripts/dataset_loader.py) |
