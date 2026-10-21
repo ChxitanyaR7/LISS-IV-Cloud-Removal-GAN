@@ -1,14 +1,29 @@
-# Ignore data folders
+# Large dataset directories & patches
 Data/
 extracted/
+temp_extract/
+*.npy
+*.npz
 
-# Ignore python cache and virtual environments
+# Python cache and environments
 __pycache__/
 .venv/
 venv/
+env/
 *.pyc
 *.pyo
 *.pyd
 
-# Ignore Jupyter Notebook checkpoints
+# Jupyter Notebook checkpoints
 .ipynb_checkpoints/
+
+# Model checkpoints & training logs
+checkpoints/
+weights/
+runs/
+*.pt
+*.pth
+
+# OS generated files
+.DS_Store
+Thumbs.db
