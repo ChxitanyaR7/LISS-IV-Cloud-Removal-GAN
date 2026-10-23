@@ -87,6 +87,7 @@ LISS-IV-Cloud-Removal-GAN/
 │   ├── 02_patch_generation_pipeline.ipynb # Step 2: Automated scene unzipping & patch extraction
 │   ├── 03_preview_and_verify.ipynb    # Step 3: Paired dataset visual validation & histograms
 │   ├── 04_cloud_detection_and_masking.ipynb # Step 4: Cloud detection, semantic masking & parameters
+│   ├── LISS_IV_Cloud_Removal_Colab.ipynb # Step 5: Master Google Colab GPU Pix2Pix training notebook
 │   └── Reading-tiff.ipynb             # Preserved original experimental notebook
 │
 ├── scripts/                           # ⚙️ Production CLI & Reusable Python Modules
@@ -94,7 +95,10 @@ LISS-IV-Cloud-Removal-GAN/
 │   ├── cloud_simulator.py             # Multi-octave Perlin cloud simulation engine
 │   ├── cloud_detector.py              # Dual cloud detection (Spectral + U-Net) & parameters
 │   ├── preview_patches.py             # FCC preview & quality audit CLI
-│   └── dataset_loader.py              # PyTorch & NumPy LISSPairDataset & DataLoader for GANs
+│   ├── dataset_loader.py              # PyTorch & NumPy LISSPairDataset & DataLoader for GANs
+│   ├── model_gan.py                   # 4-channel Pix2Pix Generator, PatchGAN & SAM/NDVI Losses
+│   ├── package_dataset.py             # Package patch pairs into .zip for Colab/Drive upload
+│   └── inference.py                   # Full-scene & patch seamless inpainting with Hann blending
 │
 ├── notes/                             # 📝 Research Scratchpad
 │   └── scratch_cells.txt              # Preserved Colab/interactive experiment cells
@@ -125,11 +129,15 @@ LISS-IV-Cloud-Removal-GAN/
 | **Run patch extraction interactively** | `notebooks/` | [02_patch_generation_pipeline.ipynb](file:///c:/Projects/Major-project/LISS-IV-Cloud-Removal-GAN/notebooks/02_patch_generation_pipeline.ipynb) |
 | **Visually verify generated patches** | `notebooks/` | [03_preview_and_verify.ipynb](file:///c:/Projects/Major-project/LISS-IV-Cloud-Removal-GAN/notebooks/03_preview_and_verify.ipynb) |
 | **Detect clouds & extract GAN parameters** | `notebooks/` | [04_cloud_detection_and_masking.ipynb](file:///c:/Projects/Major-project/LISS-IV-Cloud-Removal-GAN/notebooks/04_cloud_detection_and_masking.ipynb) |
+| **Train 4-channel Pix2Pix GAN on Colab GPU** | `notebooks/` | [LISS_IV_Cloud_Removal_Colab.ipynb](file:///c:/Projects/Major-project/LISS-IV-Cloud-Removal-GAN/notebooks/LISS_IV_Cloud_Removal_Colab.ipynb) |
 | **Run automated extraction from Terminal** | `scripts/` | `python scripts/generate_patches.py --patch_size 256 --stride 128` |
 | **Detect clouds & view masks from Terminal** | `scripts/` | `python scripts/cloud_detector.py --preview --num_samples 4` |
 | **Quickly inspect patches from Terminal** | `scripts/` | `python scripts/preview_patches.py --num_samples 4 --save` |
+| **Package dataset zip for Google Colab/Drive** | `scripts/` | `python scripts/package_dataset.py --num_pairs 5000` |
 | **Modify or test cloud simulation logic** | `scripts/` | [cloud_simulator.py](file:///c:/Projects/Major-project/LISS-IV-Cloud-Removal-GAN/scripts/cloud_simulator.py) |
 | **Load patches into PyTorch for GANs** | `scripts/` | [dataset_loader.py](file:///c:/Projects/Major-project/LISS-IV-Cloud-Removal-GAN/scripts/dataset_loader.py) |
+| **Pix2Pix Generator, Discriminator & Losses** | `scripts/` | [model_gan.py](file:///c:/Projects/Major-project/LISS-IV-Cloud-Removal-GAN/scripts/model_gan.py) |
+| **Run seamless Hann window inference** | `scripts/` | `python scripts/inference.py --patch <path> --checkpoint <pth> --save` |
 | **Original notebook archive** | `notebooks/` | [Reading-tiff.ipynb](file:///c:/Projects/Major-project/LISS-IV-Cloud-Removal-GAN/notebooks/Reading-tiff.ipynb) |
 
 ---
