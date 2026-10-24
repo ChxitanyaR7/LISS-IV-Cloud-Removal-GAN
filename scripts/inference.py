@@ -127,11 +127,10 @@ class CloudRemovalInference:
         inpainted_np = ((gen_out.squeeze(0).cpu().numpy() + 1.0) * 0.5).astype(np.float32)
         inpainted_np = np.clip(inpainted_np, 0.0, 1.0)
 
-        # 3. Mask-based Identity Blending:
-        # Preserve original pixels where mask is low (cloud-free ground)
-        m = cloud_mask[np.newaxis, :, :]  # (1, 256, 256)
-        final_patch = (1.0 - m) * cloudy_patch + m * inpainted_np
-        return np.clip(final_patch, 0.0, 1.0).astype(np.float32)
+        # 3. Direct Inpainted Output:
+        # U-Net 256 skip connections natively preserve cloud-free background features
+        # without diluting the inpainting with cloudy input pixels.
+        return inpainted_np
 
     def inpaint_scene(self, scene: np.ndarray, patch_size: int = 256, stride: int = 128) -> np.ndarray:
         """
