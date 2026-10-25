@@ -73,7 +73,7 @@ class CloudRemovalInference:
 
         print(f"[*] Initializing Generator on device: {self.device}")
         self.generator = UNetGenerator(in_channels=4, out_channels=3).to(self.device)
-        self.detector = SpectralCloudDetector()
+        self.detector = SpectralCloudDetector(brightness_threshold=0.20)
 
         if checkpoint_path and Path(checkpoint_path).exists():
             print(f"[*] Loading trained weights from: {checkpoint_path}")
@@ -110,12 +110,11 @@ class CloudRemovalInference:
         if np.max(cloud_mask) < 0.05:
             return cloudy_patch.copy()
 
-        # 2. Build 4-channel guidance tensor in [-1, 1]
-        # cloudy_patch in [0, 1] -> [-1, 1]
+        # 2. Build 4-channel guidance tensor:
+        # cloudy_patch in [0, 1] -> [-1, 1] for Tanh generator
         cloudy_norm = cloudy_patch * 2.0 - 1.0
-        # cloud_mask in [0, 1] -> [-1, 1]
-        mask_norm = cloud_mask * 2.0 - 1.0
-        mask_tensor = mask_norm[np.newaxis, :, :]  # (1, 256, 256)
+        # Cloud mask channel stays in [0, 1] (exactly matching Colab dataset training)
+        mask_tensor = cloud_mask[np.newaxis, :, :].astype(np.float32)
 
         guide_np = np.concatenate([cloudy_norm, mask_tensor], axis=0)  # (4, 256, 256)
         guide_t = torch.from_numpy(guide_np).unsqueeze(0).float().to(self.device)  # (1, 4, 256, 256)
