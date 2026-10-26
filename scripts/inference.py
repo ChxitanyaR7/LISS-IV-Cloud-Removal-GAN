@@ -63,6 +63,21 @@ def to_fcc_rgb(patch_b2_b3_b4: np.ndarray) -> np.ndarray:
     return np.clip(fcc, 0.0, 1.0)
 
 
+def to_true_color_rgb(patch_b2_b3_b4: np.ndarray) -> np.ndarray:
+    """
+    Synthesizes Natural True Color RGB (Red, Green, Blue) from LISS-IV bands:
+    - R = Band 3 (Red: 0.62-0.68 um)
+    - G = Band 2 (Green: 0.52-0.59 um)
+    - B = Synthesized Blue (derived from Green and Red optical reflectance)
+    Vegetation appears Natural Green, Water appears Blue, Urban/Residential appears Gray/Brown!
+    """
+    b2 = patch_b2_b3_b4[0]
+    b3 = patch_b2_b3_b4[1]
+    blue_synth = np.clip(1.20 * b2 - 0.28 * b3, 0.0, 1.0)
+    rgb = np.stack([b3, b2, blue_synth], axis=-1)
+    return np.clip(rgb, 0.0, 1.0)
+
+
 class CloudRemovalInference:
     """Manages model loading and multi-scale inference."""
     def __init__(self, checkpoint_path: str = None, device: str = None, dry_run: bool = False):
@@ -94,7 +109,12 @@ class CloudRemovalInference:
 
         self.generator.eval()
 
-    def inpaint_patch(self, cloudy_patch: np.ndarray, cloud_mask: np.ndarray = None) -> np.ndarray:
+    def inpaint_patch(
+        self,
+        cloudy_patch: np.ndarray,
+        cloud_mask: np.ndarray = None,
+        ref_ground: np.ndarray = None
+    ) -> np.ndarray:
         """
         Inpaints a single (3, 256, 256) cloudy patch in [0, 1].
         Returns:
@@ -110,10 +130,26 @@ class CloudRemovalInference:
         if np.max(cloud_mask) < 0.05:
             return cloudy_patch.copy()
 
+        # Compute or use background ground reference
+        if ref_ground is None:
+            clear_px = cloud_mask < 0.20
+            if np.any(clear_px):
+                ref_ground = np.array([
+                    np.median(cloudy_patch[0, clear_px]),
+                    np.median(cloudy_patch[1, clear_px]),
+                    np.median(cloudy_patch[2, clear_px])
+                ], dtype=np.float32)[:, None, None]
+            else:
+                ref_ground = np.array([0.20, 0.19, 0.25], dtype=np.float32)[:, None, None]
+
         # 2. Build 4-channel guidance tensor:
-        # cloudy_patch in [0, 1] -> [-1, 1] for Tanh generator
-        cloudy_norm = cloudy_patch * 2.0 - 1.0
-        # Cloud mask channel stays in [0, 1] (exactly matching Colab dataset training)
+        # Adaptive Radiative Transfer De-hazing & Context Inpainting:
+        # Attenuate atmospheric path scattering proportional to cloud mask,
+        # and guide dense cloud cores toward surrounding scene spectral context.
+        alpha = np.clip(cloud_mask[np.newaxis, :, :].astype(np.float32) * 1.30, 0.0, 0.95)
+        guided = (1.0 - alpha) * cloudy_patch + alpha * ref_ground
+        cloudy_norm = guided * 2.0 - 1.0
+        # Cloud mask channel stays in [0, 1] (matching Colab dataset training)
         mask_tensor = cloud_mask[np.newaxis, :, :].astype(np.float32)
 
         guide_np = np.concatenate([cloudy_norm, mask_tensor], axis=0)  # (4, 256, 256)
@@ -126,9 +162,6 @@ class CloudRemovalInference:
         inpainted_np = ((gen_out.squeeze(0).cpu().numpy() + 1.0) * 0.5).astype(np.float32)
         inpainted_np = np.clip(inpainted_np, 0.0, 1.0)
 
-        # 3. Direct Inpainted Output:
-        # U-Net 256 skip connections natively preserve cloud-free background features
-        # without diluting the inpainting with cloudy input pixels.
         return inpainted_np
 
     def inpaint_scene(self, scene: np.ndarray, patch_size: int = 256, stride: int = 128) -> np.ndarray:
@@ -140,6 +173,18 @@ class CloudRemovalInference:
         c, h, w = scene.shape
         print(f"[*] Inpainting scene of dimensions: {w}x{h} ({c} bands)...")
         print(f"[*] Overlap: patch_size={patch_size}, stride={stride} (50% overlap)")
+
+        # Compute global scene ground reference
+        full_mask = self.detector.predict_mask(scene)
+        clear_bg = (scene[0] > 0) & (full_mask < 0.20)
+        if np.any(clear_bg):
+            ref_ground = np.array([
+                np.median(scene[0, clear_bg]),
+                np.median(scene[1, clear_bg]),
+                np.median(scene[2, clear_bg])
+            ], dtype=np.float32)[:, None, None]
+        else:
+            ref_ground = np.array([0.20, 0.19, 0.25], dtype=np.float32)[:, None, None]
 
         accum = np.zeros((3, h, w), dtype=np.float32)
         weight_map = np.zeros((h, w), dtype=np.float32)
@@ -161,7 +206,7 @@ class CloudRemovalInference:
         for y in y_steps:
             for x in x_steps:
                 tile = scene[:, y:y + patch_size, x:x + patch_size]
-                inpainted_tile = self.inpaint_patch(tile)
+                inpainted_tile = self.inpaint_patch(tile, ref_ground=ref_ground)
 
                 # Overlap-add with 2D Hann window
                 for ch in range(3):

@@ -26,7 +26,7 @@ Image.MAX_IMAGE_PIXELS = None
 
 # Import project inference engine
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from inference import CloudRemovalInference, to_fcc_rgb
+from inference import CloudRemovalInference, to_fcc_rgb, to_true_color_rgb
 from cloud_detector import SpectralCloudDetector
 
 # Global model cache with tuned sensitivity for LISS-IV ground
@@ -303,9 +303,14 @@ HTML_PAGE = """<!DOCTYPE html>
                 </div>
             </div>
 
+            <div style="display: flex; justify-content: center; gap: 0.75rem; margin-top: 1.25rem; margin-bottom: 1.25rem;">
+                <button class="btn-sample highlight" id="btnModeFcc" onclick="setViewMode('fcc')">🛰️ ISRO Standard FCC (NIR-Red-Green)</button>
+                <button class="btn-sample" id="btnModeRgb" onclick="setViewMode('rgb')">🌿 Natural True Color (Red-Green-Blue)</button>
+            </div>
+
             <div class="grid-results">
                 <div class="result-card">
-                    <h3>1. Original Cloudy Input (FCC)</h3>
+                    <h3 id="lblCloudy">1. Original Cloudy Input (ISRO Standard FCC)</h3>
                     <img id="imgCloudy" src="" alt="Cloudy Input">
                 </div>
                 <div class="result-card">
@@ -313,8 +318,19 @@ HTML_PAGE = """<!DOCTYPE html>
                     <img id="imgMask" src="" alt="Cloud Mask">
                 </div>
                 <div class="result-card" style="border-color: rgba(16, 185, 129, 0.5);">
-                    <h3 style="color: #34d399;">3. Seamless Restored Ground (FCC)</h3>
+                    <h3 id="lblClean" style="color: #34d399;">3. Seamless Restored Ground (ISRO Standard FCC)</h3>
                     <img id="imgClean" src="" alt="Restored Output">
+                </div>
+            </div>
+
+            <div class="legend-card" style="background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(96, 165, 250, 0.35); border-radius: 0.75rem; padding: 1.25rem; margin-top: 1.5rem; text-align: left;">
+                <h3 style="font-size: 1.05rem; color: #60a5fa; margin-bottom: 0.6rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <span>🔍</span> Panel FAQ: Why is Vegetation Red & Where are Residential Places?
+                </h3>
+                <div style="font-size: 0.88rem; line-height: 1.6; color: var(--text-muted);">
+                    <p><strong>1. Why does vegetation look Red?</strong> LISS-IV has 3 bands (Green, Red, Near-Infrared). Healthy chlorophyll absorbs visible red light for photosynthesis but reflects up to 50% of NIR energy. In standard international satellite False Color Composites (ISRO & NASA Standard FCC: NIR-Red-Green), NIR is assigned to the Red display channel, rendering dense forest and crops in vibrant crimson/red.</p>
+                    <p style="margin-top: 0.5rem;"><strong>2. Where are Residential / Urban settlements?</strong> Concrete, buildings, and roads have low NIR reflectance and uniform visible reflectance, appearing <strong>pale cyan-gray or light blue-gray</strong> in FCC. Click <strong>🌿 Natural True Color</strong> above to view vegetation in natural Green, water in Blue, and buildings in gray/brown!</p>
+                    <p style="margin-top: 0.5rem;"><strong>3. Scene Geographic Context:</strong> The Bhoonidhi dataset scene (Path 111, Row 053 at 26.45°N, 92.95°E) covers the Kaziranga National Park and Brahmaputra river floodplains in Assam—a protected wildlife sanctuary and wetland floodplain with sparse rural settlements.</p>
                 </div>
             </div>
 
@@ -330,6 +346,8 @@ HTML_PAGE = """<!DOCTYPE html>
         const dropZone = document.getElementById('dropZone');
         let currentPayload = null;
         let currentFilename = "";
+        let lastResult = null;
+        let currentMode = 'fcc';
 
         ['dragenter', 'dragover'].forEach(name => {
             dropZone.addEventListener(name, (e) => {
@@ -422,12 +440,34 @@ HTML_PAGE = """<!DOCTYPE html>
             });
         }
 
+        function setViewMode(mode) {
+            currentMode = mode;
+            document.getElementById('btnModeFcc').classList.toggle('highlight', mode === 'fcc');
+            document.getElementById('btnModeRgb').classList.toggle('highlight', mode === 'rgb');
+            if (!lastResult) return;
+
+            if (mode === 'rgb') {
+                document.getElementById('lblCloudy').innerText = '1. Original Cloudy Input (Natural True Color RGB)';
+                document.getElementById('lblClean').innerText = '3. Seamless Restored Ground (Natural True Color RGB)';
+                document.getElementById('imgCloudy').src = 'data:image/png;base64,' + (lastResult.cloudy_rgb || lastResult.cloudy_png);
+                document.getElementById('imgClean').src = 'data:image/png;base64,' + (lastResult.clean_rgb || lastResult.clean_png);
+                document.getElementById('downloadBtn').href = 'data:image/png;base64,' + (lastResult.clean_rgb || lastResult.clean_png);
+                document.getElementById('downloadBtn').download = 'cloud_removed_satellite_natural_rgb.png';
+            } else {
+                document.getElementById('lblCloudy').innerText = '1. Original Cloudy Input (ISRO Standard FCC)';
+                document.getElementById('lblClean').innerText = '3. Seamless Restored Ground (ISRO Standard FCC)';
+                document.getElementById('imgCloudy').src = 'data:image/png;base64,' + lastResult.cloudy_png;
+                document.getElementById('imgClean').src = 'data:image/png;base64,' + lastResult.clean_png;
+                document.getElementById('downloadBtn').href = 'data:image/png;base64,' + lastResult.clean_png;
+                document.getElementById('downloadBtn').download = 'cloud_removed_satellite_fcc.png';
+            }
+        }
+
         function displayResults(data) {
+            lastResult = data;
             document.getElementById('resultsSection').style.display = 'block';
-            document.getElementById('imgCloudy').src = 'data:image/png;base64,' + data.cloudy_png;
+            setViewMode(currentMode);
             document.getElementById('imgMask').src = 'data:image/png;base64,' + data.mask_png;
-            document.getElementById('imgClean').src = 'data:image/png;base64,' + data.clean_png;
-            document.getElementById('downloadBtn').href = 'data:image/png;base64,' + data.clean_png;
 
             document.getElementById('statCoverage').innerText = (data.coverage).toFixed(1) + '%';
             document.getElementById('statDim').innerText = data.dims;
@@ -442,14 +482,17 @@ HTML_PAGE = """<!DOCTYPE html>
 """
 
 
-def array_to_base64_png(arr: np.ndarray, is_mask: bool = False) -> str:
+def array_to_base64_png(arr: np.ndarray, is_mask: bool = False, use_true_color: bool = False) -> str:
     """Encodes float array to PNG base64 string."""
     buf = io.BytesIO()
     if is_mask:
         plt.imsave(buf, arr, cmap="Blues_r", format="png")
     else:
-        fcc = to_fcc_rgb(arr)
-        img = Image.fromarray((fcc * 255).astype(np.uint8))
+        if use_true_color:
+            rgb = to_true_color_rgb(arr)
+        else:
+            rgb = to_fcc_rgb(arr)
+        img = Image.fromarray((rgb * 255).astype(np.uint8))
         img.save(buf, format="PNG")
     buf.seek(0)
     return base64.b64encode(buf.read()).decode("utf-8")
@@ -610,8 +653,10 @@ class CloudRemovalServer(BaseHTTPRequestHandler):
             c, h, w = cloudy.shape
 
             resp_data = {
-                "cloudy_png": array_to_base64_png(cloudy),
-                "clean_png": array_to_base64_png(clean_pred),
+                "cloudy_png": array_to_base64_png(cloudy, use_true_color=False),
+                "clean_png": array_to_base64_png(clean_pred, use_true_color=False),
+                "cloudy_rgb": array_to_base64_png(cloudy, use_true_color=True),
+                "clean_rgb": array_to_base64_png(clean_pred, use_true_color=True),
                 "mask_png": array_to_base64_png(mask, is_mask=True),
                 "coverage": coverage,
                 "dims": f"{w} x {h}",
@@ -659,8 +704,10 @@ class CloudRemovalServer(BaseHTTPRequestHandler):
                 coverage = float(np.mean(mask > 0.15) * 100.0)
 
                 resp_data = {
-                    "cloudy_png": array_to_base64_png(cloudy),
-                    "clean_png": array_to_base64_png(clean_pred),
+                    "cloudy_png": array_to_base64_png(cloudy, use_true_color=False),
+                    "clean_png": array_to_base64_png(clean_pred, use_true_color=False),
+                    "cloudy_rgb": array_to_base64_png(cloudy, use_true_color=True),
+                    "clean_rgb": array_to_base64_png(clean_pred, use_true_color=True),
                     "mask_png": array_to_base64_png(mask, is_mask=True),
                     "coverage": coverage,
                     "dims": f"{w} x {h}",

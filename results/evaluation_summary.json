@@ -1,0 +1,159 @@
+{
+    "metadata": {
+        "checkpoint_evaluated": "C:/Projects/Major-project/LISS-IV-Cloud-Removal-GAN/checkpoints/generator_best.pth",
+        "dataset_split": "val_10k",
+        "split_description": "Held-out 10k Validation Set (patches 9500-9999, evaluated 100)",
+        "validation_scope": "same_scene_spatial_patch_validation (patches originate from parent acquisition R2F11NOV2023065188011200053SSANSTUC00GTDC; not independent cross-scene generalization)",
+        "image_dimensions": [
+            3,
+            256,
+            256
+        ],
+        "band_order": [
+            "Band 2 (Green)",
+            "Band 3 (Red)",
+            "Band 4 (NIR)"
+        ],
+        "data_range": 1.0,
+        "data_type": "float32 in [0, 1]",
+        "ssim_settings": {
+            "window": "sliding square Gaussian window",
+            "gaussian_weights": true,
+            "sigma": 1.5,
+            "channel_axis": 0,
+            "data_range": 1.0,
+            "use_sample_covariance": false
+        },
+        "sam_settings": {
+            "masking": "Excludes only invalid reference ground pixels (||t|| <= 1e-6); zero-norm model predictions penalized as 90 degrees."
+        },
+        "ndvi_settings": {
+            "formula": "(NIR - Red) / (NIR + Red + 1e-7)",
+            "red_band": "Band 3 (Channel 1)",
+            "nir_band": "Band 4 (Channel 2)",
+            "masking": "Identical valid ground-truth pixels; zero variance returns 0.0"
+        },
+        "cloud_mask_threshold": 0.15,
+        "total_test_images_found": 58967,
+        "total_evaluated": 100,
+        "total_skipped": 0
+    },
+    "full_patch_metrics": {
+        "PSNR_dB": {
+            "restored_mean": 23.940266680863086,
+            "restored_std": 11.336155981615207,
+            "restored_median": 24.696044472746543,
+            "restored_q25": 11.415370787827534,
+            "restored_q75": 36.48369161991969,
+            "restored_iqr": 25.068320832092155,
+            "cloudy_mean": 17.777089122161655,
+            "cloudy_std": 3.852815790334981,
+            "cloudy_median": 18.020242762846067,
+            "cloudy_iqr": 5.946548034791364,
+            "mean_gain": 6.163177558701437,
+            "median_gain": 9.661523429306278,
+            "gain_iqr": 23.16278131149245,
+            "min": 7.133699468152336,
+            "max": 39.828419529373534
+        },
+        "SSIM": {
+            "restored_mean": 0.8369954109191895,
+            "restored_std": 0.15649947776780615,
+            "restored_median": 0.9105115234851837,
+            "restored_iqr": 0.23647458851337433,
+            "cloudy_mean": 0.8125597098469735,
+            "cloudy_std": 0.10845984687935123,
+            "cloudy_median": 0.8429904282093048,
+            "cloudy_iqr": 0.13087500631809235,
+            "mean_gain": 0.024435701072216032,
+            "median_gain": 0.09801137447357178,
+            "min": 0.4939005374908447,
+            "max": 0.9750593304634094
+        },
+        "SAM_degrees": {
+            "restored_mean": 5.044146257638931,
+            "restored_std": 3.3003532979058803,
+            "restored_median": 4.277032136917114,
+            "restored_iqr": 4.8493459820747375,
+            "cloudy_mean": 9.107703340053558,
+            "cloudy_std": 5.235875582955211,
+            "cloudy_median": 8.655632019042969,
+            "cloudy_iqr": 7.202802300453186,
+            "mean_reduction": 4.063557082414627,
+            "median_reduction": 5.088846802711487,
+            "min": 1.5058367252349854,
+            "max": 20.058259963989258
+        },
+        "NDVI_MAE": {
+            "restored_mean": 0.08966591391712427,
+            "restored_std": 0.06308127328364184,
+            "restored_median": 0.07083332538604736,
+            "restored_iqr": 0.08599089924246073,
+            "cloudy_mean": 0.16628317737951875,
+            "cloudy_std": 0.0960691985949511,
+            "cloudy_median": 0.15695303678512573,
+            "cloudy_iqr": 0.1360803060233593,
+            "mean_reduction": 0.07661726346239447,
+            "median_reduction": 0.09227814618498087
+        },
+        "NDVI_Pearson_Correlation": {
+            "restored_mean": 0.834917428013807,
+            "restored_std": 0.2081890414975295,
+            "restored_median": 0.9156968892196052,
+            "restored_iqr": 0.13372793111825676,
+            "cloudy_mean": 0.7581390886185558,
+            "cloudy_std": 0.16775788687858126,
+            "cloudy_median": 0.7874456474754186,
+            "cloudy_iqr": 0.2648697539344057,
+            "mean_gain": 0.07677833939525106,
+            "median_gain": 0.1017389810145134,
+            "min": -0.21973135890517112,
+            "max": 0.9826078071554478
+        }
+    },
+    "worst_5_psnr_drops": [
+        {
+            "name": "patch_09525.npy",
+            "psnr_gain": -21.3246,
+            "psnr_cloudy": 28.4583,
+            "psnr_restored": 7.1337
+        },
+        {
+            "name": "patch_09559.npy",
+            "psnr_gain": -15.799,
+            "psnr_cloudy": 24.322,
+            "psnr_restored": 8.523
+        },
+        {
+            "name": "patch_09535.npy",
+            "psnr_gain": -13.1012,
+            "psnr_cloudy": 20.9626,
+            "psnr_restored": 7.8614
+        },
+        {
+            "name": "patch_09523.npy",
+            "psnr_gain": -13.0257,
+            "psnr_cloudy": 22.544,
+            "psnr_restored": 9.5183
+        },
+        {
+            "name": "patch_09560.npy",
+            "psnr_gain": -12.8143,
+            "psnr_cloudy": 20.875,
+            "psnr_restored": 8.0607
+        }
+    ],
+    "cloud_affected_region_metrics": {
+        "samples_with_cloud_region": 99,
+        "PSNR_dB": {
+            "restored_mean": 19.72096311576331,
+            "cloudy_mean": 14.798774106500892,
+            "mean_gain": 4.922189009262423
+        },
+        "SAM_degrees": {
+            "restored_mean": 7.077976183457808,
+            "cloudy_mean": 12.158668639081897,
+            "mean_reduction": 5.080692455624089
+        }
+    }
+}

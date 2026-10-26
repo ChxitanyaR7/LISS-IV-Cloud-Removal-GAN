@@ -1,0 +1,82 @@
+{
+    "metadata": {
+        "checkpoint_evaluated": "C:/Projects/Major-project/LISS-IV-Cloud-Removal-GAN/checkpoints/generator_best.pth",
+        "dataset_split": "val_5k",
+        "split_description": "Held-out 5k Validation Set (patches 4500-4999, evaluated 100)",
+        "image_dimensions": [
+            3,
+            256,
+            256
+        ],
+        "band_order": [
+            "Band 2 (Green)",
+            "Band 3 (Red)",
+            "Band 4 (NIR)"
+        ],
+        "data_range": 1.0,
+        "data_type": "float32 in [0, 1]",
+        "nodata_handling": "Zeros filtered via valid_mask (all 3 bands > 0 & finite)",
+        "cloud_mask_threshold": 0.15,
+        "total_test_images_found": 58967,
+        "total_evaluated": 100,
+        "total_skipped": 0
+    },
+    "full_patch_metrics": {
+        "PSNR_dB": {
+            "restored_mean": 32.00954531187166,
+            "restored_std": 7.377051745221237,
+            "cloudy_mean": 17.05864244814968,
+            "cloudy_std": 3.8383286692223173,
+            "mean_gain": 14.950902863721979,
+            "min": 9.250406152905793,
+            "max": 40.540147445499805
+        },
+        "SSIM": {
+            "restored_mean": 0.9248582464456558,
+            "restored_std": 0.08558381346069333,
+            "cloudy_mean": 0.7793974846601486,
+            "cloudy_std": 0.1169600584856268,
+            "mean_gain": 0.1454607617855072,
+            "min": 0.5564383864402771,
+            "max": 0.9775292277336121
+        },
+        "SAM_degrees": {
+            "restored_mean": 3.8029220688343046,
+            "restored_std": 3.2139644412537964,
+            "cloudy_mean": 10.811340363025666,
+            "cloudy_std": 5.22304108288199,
+            "mean_reduction": 7.008418294191361,
+            "min": 1.2664622068405151,
+            "max": 18.250015258789062
+        },
+        "NDVI_MAE": {
+            "restored_mean": 0.06666991047561169,
+            "restored_std": 0.06061979977638001,
+            "cloudy_mean": 0.19947153493762015,
+            "cloudy_std": 0.10117836159709379,
+            "mean_reduction": 0.13280162446200847
+        },
+        "NDVI_Pearson_Correlation": {
+            "restored_mean": 0.8987473590994081,
+            "restored_std": 0.10338088867029352,
+            "cloudy_mean": 0.7189239260246741,
+            "cloudy_std": 0.17268421858866906,
+            "mean_gain": 0.17982343307473397,
+            "min": 0.3734906491940496,
+            "max": 0.9880633655439534
+        }
+    },
+    "cloud_affected_region_metrics": {
+        "samples_with_cloud_region": 100,
+        "PSNR_dB": {
+            "restored_mean": 27.484177530470685,
+            "cloudy_mean": 12.48593422919331,
+            "mean_gain": 14.998243301277375
+        },
+        "SAM_degrees": {
+            "restored_mean": 6.121403781175613,
+            "cloudy_mean": 16.689098385572432,
+            "mean_reduction": 10.56769460439682
+        }
+    }
+}
